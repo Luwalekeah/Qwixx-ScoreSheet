@@ -19,6 +19,28 @@ pip install -r requirements.txt
 streamlit run qwixx.py
 ```
 
+## Run in a Container (k3s)
+
+```sh
+docker build -t qwixx-scoresheet .
+docker run --rm -p 8501:8501 qwixx-scoresheet
+```
+
+Multi-architecture image (every dependency ships arm64 wheels, so no compilers are needed):
+
+```sh
+docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/qwixx-scoresheet:<tag> --push .
+```
+
+Running it on Kubernetes / k3s:
+
+* Container port `8501`. Point liveness and readiness probes at `GET /_stcore/health` (returns `ok`).
+* Runs as UID/GID `10001`, so `runAsNonRoot: true` works. The image sets `HOME=/home/app`; the app started and served pages with an unwritable `HOME`, so a read-only root filesystem is expected to work (mount an `emptyDir` at `/tmp` if you see write errors).
+* The ingress must pass WebSocket connections through (Traefik, k3s's default, does). To serve under a sub-path set `STREAMLIT_SERVER_BASE_URL_PATH`.
+* The image sets `STREAMLIT_CLIENT_TOOLBAR_MODE=viewer`, which hides the "Deploy" button and developer menu items.
+
+This repository does not include Kubernetes manifests.
+
 ## Dependencies
 
 Pinned in `requirements.txt` (Python **3.12 or newer** is required by NumPy 2.5):
