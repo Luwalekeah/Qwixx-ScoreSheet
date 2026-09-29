@@ -1,10 +1,22 @@
 import streamlit as st
 
+import persistence
+
+APP_NAME = "qwixx"
+COLORS = ("red", "yellow", "green", "blue")
+LOCK_MODES = ("", "Points", "No Points")
+CELLS_PER_ROW = 11  # the numbers 2..12
+MIN_CROSSES_TO_LOCK_FOR_POINTS = 5
+MAX_PENALTIES = 4
+STATE_VERSION = 1
+
+
 class QwixxScoresheet:
     """Streamlined Qwixx score sheet with lock modes: Points or No Points."""
 
     def __init__(self):
         self._init_state()
+        self._game = persistence.GameSession(APP_NAME)
 
     def _init_state(self):
         defaults = {
@@ -55,6 +67,8 @@ class QwixxScoresheet:
         st.session_state.game["penalty"] = idx + 1 if idx >= current else idx
 
     def render(self):
+        self._restore_saved_game()
+
         # Custom checkbox-label colors
         st.markdown(
             """
@@ -83,7 +97,7 @@ class QwixxScoresheet:
             pen_score = st.session_state.game["penalty"] * -5
             st.metric(label="Penalties", value=pen_score, delta=f"{st.session_state.game['penalty']}×")
             st.markdown(f"### Total: {total + pen_score}")
-            st.button("🔄 Reset Game", on_click=lambda: st.session_state.clear(), help="Reset and restart")
+            st.button("🔄 Reset Game", on_click=self._reset, help="Reset and restart")
 
         # Main rows
         row_styles = {"red": "#ef9a9a", "yellow": "#fff59d", "green": "#a5d6a7", "blue": "#90caf9"}
@@ -164,6 +178,76 @@ class QwixxScoresheet:
             st.metric(label="Penalty impact", value=pen_score, delta=f"{st.session_state.game['penalty']}×", label_visibility="collapsed")
 
         st.markdown(f"### 🎯 Grand Total: **{total_score + pen_score}**")
+
+        self._autosave_game()
+        with st.sidebar:
+            self._game.render_status()
+
+    # ── Saved games (optional; see persistence.py) ──────────────────────────────
+
+    def _snapshot(self):
+        """The whole sheet as a JSON-able dict."""
+        game = st.session_state.game
+        return {
+            "v": STATE_VERSION,
+            "crosses": {c: [bool(x) for x in game["crosses"][c]] for c in COLORS},
+            "lock_mode": {c: game["lock_mode"][c] for c in COLORS},
+            "penalty": int(game["penalty"]),
+        }
+
+    @staticmethod
+    def _validated_state(state):
+        """Return `state` if it is a well-formed saved Qwixx sheet, else None."""
+        try:
+            if state.get("v") != STATE_VERSION:
+                return None
+            crosses, modes, penalty = state["crosses"], state["lock_mode"], state["penalty"]
+            if not (isinstance(crosses, dict) and set(crosses) == set(COLORS)):
+                return None
+            if not (isinstance(modes, dict) and set(modes) == set(COLORS)):
+                return None
+            for color in COLORS:
+                row = crosses[color]
+                if not (isinstance(row, list) and len(row) == CELLS_PER_ROW and all(type(x) is bool for x in row)):
+                    return None
+                if modes[color] not in LOCK_MODES:
+                    return None
+                if modes[color] == "Points" and sum(row) < MIN_CROSSES_TO_LOCK_FOR_POINTS:
+                    return None
+            if type(penalty) is not int or not 0 <= penalty <= MAX_PENALTIES:
+                return None
+        except (AttributeError, KeyError, TypeError):
+            return None
+        return state
+
+    def _apply_saved_state(self, state):
+        """Load a validated saved sheet into session state. Must run before the widgets are drawn."""
+        st.session_state.game = {
+            "crosses": {c: list(state["crosses"][c]) for c in COLORS},
+            "lock_mode": {c: state["lock_mode"][c] for c in COLORS},
+            "penalty": state["penalty"],
+        }
+        for color in COLORS:
+            # The lock selectboxes own their value; without this they would start blank and clear the lock.
+            st.session_state[f"{color}_mode"] = state["lock_mode"][color]
+
+    def _restore_saved_game(self):
+        saved = self._game.restore()
+        if saved is None:
+            return
+        clean = self._validated_state(saved)
+        if clean is None:
+            self._game.mark_unusable()
+            return
+        self._apply_saved_state(clean)
+
+    def _autosave_game(self):
+        self._game.save_if_changed(self._snapshot())
+
+    def _reset(self):
+        """Button callback: detach from the saved game (which stays stored) and start over."""
+        persistence.forget_game()
+        st.session_state.clear()
 
 if __name__ == "__main__":
     QwixxScoresheet().render()
