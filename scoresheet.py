@@ -157,11 +157,11 @@ class QwixxScoresheet:
             delta = cnt + (1 if mode == "Points" else 0)
             with cols[i]:
                 st.markdown(f'<span style="font-weight:bold; color:{row_styles[color]};">{color.title()} Score</span>', unsafe_allow_html=True)
-                st.metric(label="", value=score, delta=f"{delta}×")
+                st.metric(label=f"{color.title()} score", value=score, delta=f"{delta}×", label_visibility="collapsed")
         pen_score = st.session_state.game["penalty"] * -5
         with cols[4]:
             st.markdown('<span style="font-weight:bold; color:#fff;">Penalty Impact</span>', unsafe_allow_html=True)
-            st.metric(label="", value=pen_score, delta=f"{st.session_state.game['penalty']}×")
+            st.metric(label="Penalty impact", value=pen_score, delta=f"{st.session_state.game['penalty']}×", label_visibility="collapsed")
 
         st.markdown(f"### 🎯 Grand Total: **{total_score + pen_score}**")
 
