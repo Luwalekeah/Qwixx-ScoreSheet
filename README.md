@@ -81,3 +81,11 @@ The tests drive the real app headlessly with Streamlit's `AppTest`:
 pip install -r requirements-dev.txt
 pytest
 ```
+
+## License & Credits
+
+**Copyright © 2025 TechTales w/ Luwah.**
+
+Original repository: [https://github.com/Luwalekeah](https://github.com/Luwalekeah)
+
+Licensed under the MIT License. See `LICENSE` for details.
