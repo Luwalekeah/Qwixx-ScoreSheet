@@ -148,8 +148,8 @@ def test_reopening_the_link_restores_crosses_locks_and_penalties(store):
     store.games[("qwixx", GAME_ID)] = saved_state()
     at = new_app(game=GAME_ID)
     assert not at.exception and warnings(at) == []
-    assert sidebar_scores(at) == {"Red": 16, "Yellow": 0, "Green": 3, "Blue": 0, "Penalties": -10}
-    assert sidebar_total(at) == 16 + 3 - 10
+    assert sidebar_scores(at) == {"Red": 21, "Yellow": 0, "Green": 3, "Blue": 0, "Penalties": -10}
+    assert sidebar_total(at) == 21 + 3 - 10
     assert "Red 🔒" in [m.label.strip() for m in at.sidebar.metric]
     assert [checkbox(at, f"red_{n}").value for n in range(2, 8)] == [True] * 5 + [False]
     assert lock_mode(at, "red").value == "Points" and lock_mode(at, "blue").value == "No Points"

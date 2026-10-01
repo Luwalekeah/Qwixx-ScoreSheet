@@ -34,11 +34,10 @@ class QwixxScoresheet:
 
     def _row_score(self, color):
         cnt = sum(st.session_state.game["crosses"][color])
-        base = self._score(cnt)
-        # bonus only if Points lock selected
+        # a Points lock counts as if it were another crossed number (per the rules text)
         if st.session_state.game["lock_mode"][color] == "Points":
-            return base + 1
-        return base
+            return self._score(cnt + 1)
+        return self._score(cnt)
 
     def _can_cross(self, row, idx):
         # disable further crosses once any lock mode chosen

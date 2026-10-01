@@ -113,11 +113,6 @@ def test_reset_starts_over(app):
 # --- Known problems, recorded as strict xfails so they are reproducible and flip loudly when fixed.
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="The in-app rules say the lock counts 'as if it's another crossed number' (5 crosses + lock = 6 = 21), "
-    "but the code adds a flat +1 (= 16). May be a deliberate house rule: confirm before changing.",
-)
 def test_lock_bonus_counts_as_an_extra_cross_per_the_rules_text(app):
     for number in range(2, 7):
         cross(app, "red", number)
