@@ -65,8 +65,22 @@ class QwixxScoresheet:
         current = st.session_state.game["penalty"]
         st.session_state.game["penalty"] = idx + 1 if idx >= current else idx
 
+    def _sync_lock_modes(self):
+        """Apply this run's lock-mode selectbox values before anything else is drawn.
+
+        A selectbox's new value is already in session_state by the time the script
+        reruns, so reading it here (rather than after drawing each row) lets the
+        sidebar and that row's checkboxes reflect a lock on the same run it was set,
+        instead of one interaction late.
+        """
+        for color in COLORS:
+            chosen = st.session_state.get(f"{color}_mode")
+            if chosen is not None:
+                self._set_lock_mode(color, chosen)
+
     def render(self):
         self._restore_saved_game()
+        self._sync_lock_modes()
 
         # Custom checkbox-label colors
         st.markdown(
@@ -128,10 +142,9 @@ class QwixxScoresheet:
                     ["", "Points", "No Points"],
                     key=f"{color}_mode"
                 )
-                prev_mode = st.session_state.game["lock_mode"][color]
-                self._set_lock_mode(color, st.session_state[f"{color}_mode"])
-                # Determine if Points was invalid selection
-                invalid = (choice == "Points" and prev_mode == "" and st.session_state.game["lock_mode"][color] == "")
+                # _sync_lock_modes already applied this choice; if it didn't take
+                # (not enough crosses), the selection was invalid.
+                invalid = choice == "Points" and st.session_state.game["lock_mode"][color] != "Points"
             # Lock indicator and warning
             with cols[-1]:
                 if invalid:

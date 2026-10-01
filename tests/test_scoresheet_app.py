@@ -67,7 +67,6 @@ def test_locking_for_no_points_is_always_allowed_and_freezes_the_row(app):
     cross(app, "red", 2)
     lock_mode(app, "red").select("No Points").run()
     assert not app.exception
-    app.run()  # the UI catches up with a lock one run late (see the xfail below)
     assert all(checkbox(app, f"red_{n}").disabled for n in range(2, 13))
     assert sidebar_scores(app)["Red"] == 1  # locking without points adds nothing
     assert "Red 🔒" in [m.label.strip() for m in app.sidebar.metric]
@@ -77,9 +76,8 @@ def test_locking_for_points_freezes_the_row_and_adds_a_bonus(app):
     for number in range(2, 7):
         cross(app, "red", number)
     lock_mode(app, "red").select("Points").run()
-    app.run()
     assert all(checkbox(app, f"red_{n}").disabled for n in range(2, 13))
-    assert sidebar_scores(app)["Red"] > 15  # bonus applied (how much: see the xfail below)
+    assert sidebar_scores(app)["Red"] == 21  # 5 crosses, lock counts as a 6th
 
 
 def test_each_penalty_costs_five_points_and_can_be_taken_back(app):
@@ -121,11 +119,6 @@ def test_lock_bonus_counts_as_an_extra_cross_per_the_rules_text(app):
     assert sidebar_scores(app)["Red"] == 21
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="The lock mode is applied after the row's checkboxes and the sidebar are drawn, "
-    "so both only reflect a lock on the next interaction",
-)
 def test_ui_reflects_a_lock_immediately(app):
     for number in range(2, 7):
         cross(app, "red", number)
