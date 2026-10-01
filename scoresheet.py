@@ -10,6 +10,9 @@ MIN_CROSSES_TO_LOCK_FOR_POINTS = 5
 MAX_PENALTIES = 4
 STATE_VERSION = 1
 
+ROW_BACKGROUND = {"red": "#ef9a9a", "yellow": "#fff59d", "green": "#a5d6a7", "blue": "#90caf9"}
+ROW_LABEL_COLOR = {"red": "#b71c1c", "yellow": "#f9a825", "green": "#2e7d32", "blue": "#1565c0"}
+
 
 class QwixxScoresheet:
     """Streamlined Qwixx score sheet with lock modes: Points or No Points."""
@@ -82,16 +85,18 @@ class QwixxScoresheet:
         self._restore_saved_game()
         self._sync_lock_modes()
 
-        # Custom checkbox-label colors
+        # Row backgrounds and checkbox-label colors. Each row is a keyed st.container()
+        # (see below), which Streamlit renders as a real wrapping <div> with a stable
+        # .st-key-<key> class, so this CSS actually wraps the row's widgets instead of
+        # floating next to them the way a bare st.markdown("<div>...") would.
         st.markdown(
-            """
-            <style>
-              .red-row input[type=checkbox] + label, .red-row label[for^=\"red_\"] { color: #b71c1c !important; }
-              .yellow-row input[type=checkbox] + label, .yellow-row label[for^=\"yellow_\"] { color: #f9a825 !important; }
-              .green-row input[type=checkbox] + label, .green-row label[for^=\"green_\"] { color: #2e7d32 !important; }
-              .blue-row input[type=checkbox] + label, .blue-row label[for^=\"blue_\"] { color: #1565c0 !important; }
-            </style>
-            """,
+            "<style>\n" + "\n".join(
+                f'.st-key-{color}_row {{ background:{ROW_BACKGROUND[color]}; padding:10px; '
+                f'border-radius:8px; margin-bottom:12px; }}\n'
+                f'.st-key-{color}_row input[type=checkbox] + label, '
+                f'.st-key-{color}_row label[for^="{color}_"] {{ color:{ROW_LABEL_COLOR[color]} !important; }}'
+                for color in COLORS
+            ) + "\n</style>",
             unsafe_allow_html=True
         )
 
@@ -113,7 +118,6 @@ class QwixxScoresheet:
             st.button("🔄 Reset Game", on_click=self._reset, help="Reset and restart")
 
         # Main rows
-        row_styles = {"red": "#ef9a9a", "yellow": "#fff59d", "green": "#a5d6a7", "blue": "#90caf9"}
         sequences = [
             ("red", range(2,13)),
             ("yellow", range(2,13)),
@@ -121,46 +125,42 @@ class QwixxScoresheet:
             ("blue", range(12,1,-1))
         ]
         for color, nums in sequences:
-            st.markdown(
-                f'<div class="{color}-row" style="background:{row_styles[color]}; padding:10px; border-radius:8px; margin-bottom:12px">',
-                unsafe_allow_html=True
-            )
-            cols = st.columns(len(nums) + 2)
-            for i, n in enumerate(nums):
-                with cols[i]:
-                    st.checkbox(
-                        label=str(n),
-                        key=f"{color}_{n}",
-                        value=st.session_state.game["crosses"][color][i],
-                        disabled=not self._can_cross(color, i),
-                        on_change=lambda r=color, idx=i: self._toggle_cross(r, idx)
+            with st.container(key=f"{color}_row"):
+                cols = st.columns(len(nums) + 2)
+                for i, n in enumerate(nums):
+                    with cols[i]:
+                        st.checkbox(
+                            label=str(n),
+                            key=f"{color}_{n}",
+                            value=st.session_state.game["crosses"][color][i],
+                            disabled=not self._can_cross(color, i),
+                            on_change=lambda r=color, idx=i: self._toggle_cross(r, idx)
+                        )
+                # Lock Mode always enabled
+                with cols[-2]:
+                    choice = st.selectbox(
+                        "Lock Mode",
+                        ["", "Points", "No Points"],
+                        key=f"{color}_mode"
                     )
-            # Lock Mode always enabled
-            with cols[-2]:
-                choice = st.selectbox(
-                    "Lock Mode",
-                    ["", "Points", "No Points"],
-                    key=f"{color}_mode"
-                )
-                # _sync_lock_modes already applied this choice; if it didn't take
-                # (not enough crosses), the selection was invalid.
-                invalid = choice == "Points" and st.session_state.game["lock_mode"][color] != "Points"
-            # Lock indicator and warning
-            with cols[-1]:
-                if invalid:
-                    st.markdown(
-                        '<div style="background:#f9a825; color:#000; padding:4px; border-radius:4px;">Need more ✓s to lock for points</div>',
-                        unsafe_allow_html=True
-                    )
-                mode = st.session_state.game["lock_mode"][color]
-                text = "Locked" if mode else ""
-                bonus = " +1pt" if mode == "Points" else ""
-                st.markdown(f"**{text}{bonus}**", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+                    # _sync_lock_modes already applied this choice; if it didn't take
+                    # (not enough crosses), the selection was invalid.
+                    invalid = choice == "Points" and st.session_state.game["lock_mode"][color] != "Points"
+                # Lock indicator and warning
+                with cols[-1]:
+                    if invalid:
+                        st.markdown(
+                            '<div style="background:#f9a825; color:#000; padding:4px; border-radius:4px;">Need more ✓s to lock for points</div>',
+                            unsafe_allow_html=True
+                        )
+                    mode = st.session_state.game["lock_mode"][color]
+                    if mode:
+                        bonus = " +1pt" if mode == "Points" else ""
+                        st.markdown(f"**Locked{bonus}**")
 
         # Penalty section
         st.markdown("---")
-## ⚠️ Penalties")
+        st.markdown("## ⚠️ Penalties")
         cols = st.columns(4)
         for i in range(4):
             with cols[i]:
@@ -182,11 +182,11 @@ class QwixxScoresheet:
             total_score += score
             delta = cnt + (1 if mode == "Points" else 0)
             with cols[i]:
-                st.markdown(f'<span style="font-weight:bold; color:{row_styles[color]};">{color.title()} Score</span>', unsafe_allow_html=True)
+                st.markdown(f'<span style="font-weight:bold; color:{ROW_BACKGROUND[color]};">{color.title()} Score</span>', unsafe_allow_html=True)
                 st.metric(label=f"{color.title()} score", value=score, delta=f"{delta}×", label_visibility="collapsed")
         pen_score = st.session_state.game["penalty"] * -5
         with cols[4]:
-            st.markdown('<span style="font-weight:bold; color:#fff;">Penalty Impact</span>', unsafe_allow_html=True)
+            st.markdown('<span style="font-weight:bold;">Penalty Impact</span>', unsafe_allow_html=True)
             st.metric(label="Penalty impact", value=pen_score, delta=f"{st.session_state.game['penalty']}×", label_visibility="collapsed")
 
         st.markdown(f"### 🎯 Grand Total: **{total_score + pen_score}**")

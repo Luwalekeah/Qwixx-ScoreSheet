@@ -99,6 +99,12 @@ def test_grand_total_adds_rows_and_subtracts_penalties(app):
     assert any("Grand Total: **-1**" in m.value for m in app.markdown)
 
 
+def test_unlocked_rows_do_not_emit_a_stray_markdown_rule(app):
+    """Regression: an unlocked row's lock-status text used to be f"**{''}{''}**" == "****",
+    which most Markdown renderers draw as a horizontal rule rather than empty bold text."""
+    assert "****" not in [m.value for m in app.markdown]
+
+
 def test_reset_starts_over(app):
     for number in (2, 3, 4):
         cross(app, "red", number)
@@ -127,6 +133,5 @@ def test_ui_reflects_a_lock_immediately(app):
     assert all(checkbox(app, f"red_{n}").disabled for n in range(2, 13))
 
 
-@pytest.mark.xfail(strict=True, reason='The heading line is `## ⚠️ Penalties")` outside any string, so it is a comment and never renders')
 def test_penalties_section_has_a_heading(app):
     assert any(re.fullmatch(r"(---\s*)?##\s*⚠️\s*Penalties", m.value.strip()) for m in app.markdown)
