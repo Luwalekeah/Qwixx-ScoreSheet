@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  /* Qwixx row colours. Each row has a light tint for the surface and a dark ink
+     for text and borders. Every tint/ink pair clears 4.5:1 contrast. */
+  --color-qx-red-tint:    #fee2e2;
+  --color-qx-red-ink:     #991b1b;
+  --color-qx-red-edge:    #dc2626;
+
+  --color-qx-yellow-tint: #fef3c7;
+  --color-qx-yellow-ink:  #854d0e;
+  --color-qx-yellow-edge: #d97706;
+
+  --color-qx-green-tint:  #dcfce7;
+  --color-qx-green-ink:   #166534;
+  --color-qx-green-edge:  #16a34a;
+
+  --color-qx-blue-tint:   #dbeafe;
+  --color-qx-blue-ink:    #1e40af;
+  --color-qx-blue-edge:   #2563eb;
+
+  /* Neutrals */
+  --color-qx-surface:     #ffffff;
+  --color-qx-canvas:      #f8fafc;
+  --color-qx-line:        #64748b;
+  --color-qx-text:        #0f172a;
+  --color-qx-muted:       #475569;
+  --color-qx-danger:      #b91c1c;
+  --color-qx-ok:          #15803d;
+
+  /* Minimum tap target. 48px. Used as min-h-tap / min-w-tap. */
+  --spacing-tap: 3rem;
+
+  /* Fixed score cell height so a cross never reflows the grid. */
+  --spacing-cell: 3.5rem;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  --radius-card: 0.75rem;
+  --radius-cell: 0.5rem;
+}
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body { background: var(--color-qx-canvas); color: var(--color-qx-text); }
+  /* Stop iOS zooming on focus. */
+  input, select, textarea { font-size: 16px; }
+}

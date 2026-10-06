@@ -1,0 +1,37 @@
+{
+  "name": "qwixx-scoresheet",
+  "private": true,
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next lint --max-warnings=0 && next build && node scripts/check-no-secrets.mjs",
+    "start": "next start",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2",
+    "framer-motion": "^11",
+    "next": "^15",
+    "react": "^19",
+    "react-dom": "^19",
+    "server-only": "^0.0.1",
+    "zod": "^3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "^15",
+    "fake-indexeddb": "^6.2.5",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^2"
+  }
+}
